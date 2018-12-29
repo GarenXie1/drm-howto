@@ -1,0 +1,40 @@
+cc_test {
+    srcs: [
+        "modeset.c",
+    ],
+    name: "modeset",
+    defaults: [
+        "libdrm_defaults",
+    ],
+
+    shared_libs: ["libdrm"],
+    static_libs: ["libdrm_util"],
+}
+
+cc_test {
+    srcs: [
+        "modeset-double-buffered.c",
+    ],
+    name: "modeset-double-buffered",
+    defaults: [
+        "libdrm_defaults",
+    ],
+
+    shared_libs: ["libdrm"],
+    static_libs: ["libdrm_util"],
+}
+
+cc_test {
+    srcs: [
+        "modeset-vsync.c",
+    ],
+    name: "modeset-vsync",
+    defaults: [
+        "libdrm_defaults",
+    ],
+
+    shared_libs: ["libdrm"],
+    static_libs: ["libdrm_util"],
+}
+
+

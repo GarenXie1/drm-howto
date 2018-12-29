@@ -130,7 +130,7 @@ static int modeset_prepare(int fd)
 {
 	drmModeRes *res;
 	drmModeConnector *conn;
-	unsigned int i;
+	int i;
 	struct modeset_dev *dev;
 	int ret;
 
@@ -250,8 +250,8 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 			     struct modeset_dev *dev)
 {
 	drmModeEncoder *enc;
-	unsigned int i, j;
-	int32_t crtc;
+	int i, j;
+	uint32_t crtc;
 	struct modeset_dev *iter;
 
 	/* first try the currently conected encoder+crtc */
