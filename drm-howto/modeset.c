@@ -88,6 +88,7 @@ static int modeset_open(int *out, const char *node)
 		return ret;
 	}
 
+	// Gets capabilities of the DRM driver.
 	if (drmGetCap(fd, DRM_CAP_DUMB_BUFFER, &has_dumb) < 0 ||
 	    !has_dumb) {
 		fprintf(stderr, "drm device '%s' does not support dumb buffers\n",
@@ -192,17 +193,23 @@ static int modeset_prepare(int fd)
 	int ret;
 
 	/* retrieve resources */
-	res = drmModeGetResources(fd);
+	res = drmModeGetResources(fd);	// Gets information about a DRM device's CRTCs, encoders, and connectors.
 	if (!res) {
 		fprintf(stderr, "cannot retrieve DRM resources (%d): %m\n",
 			errno);
 		return -errno;
 	}
 
+	fprintf(stderr, "res->count_connectors -> %d\n",res->count_connectors);
+	fprintf(stderr, "res->count_fbs -> %d\n",res->count_fbs);
+	fprintf(stderr, "res->count_crtcs -> %d\n",res->count_crtcs);
+	fprintf(stderr, "width -> %d ~ %d\n",res->min_width,res->max_width);
+	fprintf(stderr, "height -> %d ~ %d\n",res->min_height,res->max_height);
+
 	/* iterate all connectors */
 	for (i = 0; i < res->count_connectors; ++i) {
 		/* get information for each connector */
-		conn = drmModeGetConnector(fd, res->connectors[i]);
+		conn = drmModeGetConnector(fd, res->connectors[i]);	//Gets information for a connector.
 		if (!conn) {
 			fprintf(stderr, "cannot retrieve DRM connector %u:%u (%d): %m\n",
 				i, res->connectors[i], errno);
@@ -213,6 +220,7 @@ static int modeset_prepare(int fd)
 		dev = malloc(sizeof(*dev));
 		memset(dev, 0, sizeof(*dev));
 		dev->conn = conn->connector_id;
+		fprintf(stderr, "connector_id -> %d \n",conn->connector_id);
 
 		/* call helper function to prepare this connector */
 		ret = modeset_setup_dev(fd, res, conn, dev);
@@ -271,6 +279,8 @@ static int modeset_setup_dev(int fd, drmModeRes *res, drmModeConnector *conn,
 			     struct modeset_dev *dev)
 {
 	int ret;
+
+	fprintf(stderr, "connector_id(%u) --> connection(%d)\n",conn->connector_id,conn->connection);
 
 	/* check if a monitor is connected */
 	if (conn->connection != DRM_MODE_CONNECTED) {
@@ -344,7 +354,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 
 	/* first try the currently conected encoder+crtc */
 	if (conn->encoder_id)
-		enc = drmModeGetEncoder(fd, conn->encoder_id);
+		enc = drmModeGetEncoder(fd, conn->encoder_id);	// Gets information for an encoder
 	else
 		enc = NULL;
 
@@ -359,6 +369,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 			}
 
 			if (crtc >= 0) {
+				fprintf(stderr, "1. found a CRTC %u\n",crtc);
 				drmModeFreeEncoder(enc);
 				dev->crtc = crtc;
 				return 0;
@@ -397,6 +408,7 @@ static int modeset_find_crtc(int fd, drmModeRes *res, drmModeConnector *conn,
 
 			/* we have found a CRTC, so save it and return */
 			if (crtc >= 0) {
+				fprintf(stderr, "2. found a CRTC %u\n",crtc);
 				drmModeFreeEncoder(enc);
 				dev->crtc = crtc;
 				return 0;
@@ -479,6 +491,7 @@ static int modeset_create_fb(int fd, struct modeset_dev *dev)
 		goto err_fb;
 	}
 
+	fprintf(stderr, "mmap dumb buffer size(%d bytes) , offset(%d)\n",dev->size,mreq.offset);
 	/* perform actual memory mapping */
 	dev->map = mmap(0, dev->size, PROT_READ | PROT_WRITE, MAP_SHARED,
 		        fd, mreq.offset);
@@ -564,6 +577,9 @@ int main(int argc, char **argv)
 
 	/* perform actual modesetting on each found connector+CRTC */
 	for (iter = modeset_list; iter; iter = iter->next) {
+
+		fprintf(stderr, "iter->crtc: %u, iter->fb:%d, iter->conn:%d, iter->mode:%s\n", 
+			iter->crtc,iter->fb,iter->conn,(&iter->mode == NULL)?"NULL":"YES");
 		iter->saved_crtc = drmModeGetCrtc(fd, iter->crtc);
 		ret = drmModeSetCrtc(fd, iter->crtc, iter->fb, 0, 0,
 				     &iter->conn, 1, &iter->mode);
