@@ -643,12 +643,13 @@ static void modeset_draw(void)
 	b = rand() % 0xff;
 	r_up = g_up = b_up = true;
 
-	for (i = 0; i < 50; ++i) {
+	for (i = 0; i < 500; ++i) {
 		r = next_color(&r_up, r, 20);
 		g = next_color(&g_up, g, 10);
 		b = next_color(&b_up, b, 5);
 
 		for (iter = modeset_list; iter; iter = iter->next) {
+#if 0
 			for (j = 0; j < iter->height; ++j) {
 				for (k = 0; k < iter->width; ++k) {
 					off = iter->stride * j + k * 4;
@@ -656,6 +657,39 @@ static void modeset_draw(void)
 						     (r << 16) | (g << 8) | b;
 				}
 			}
+#else
+			for (j = 0; j < iter->height; ++j) {
+				if(j <= iter->height/2){
+					for (k = 0; k < iter->width; ++k) {
+						if(k <= iter->width/2){
+							off = iter->stride * j + k * 4;
+							//fprintf(stderr, "1 -> off -> %d\n",off);
+							*(uint32_t*)&iter->map[off] =(r << 16) | (g << 8) | b;
+							//*(uint32_t*)&iter->map[off] =(0x01 << 16) | (0x01 << 8) | 0x01;
+						}else{
+							off = iter->stride * j + k * 4;
+							//fprintf(stderr, "2 -> off -> %d\n",off);
+							*(uint32_t*)&iter->map[off] =
+									 (0xAC << 16) | (0x12 << 8) | 0x34;
+						}
+					}
+				}else{
+					for (k = 0; k < iter->width; ++k) {
+						if(k <= iter->width/2){
+							off = iter->stride * j + k * 4;
+							//fprintf(stderr, "3 -> off -> %d\n",off);
+							*(uint32_t*)&iter->map[off] =
+									 (0xFF << 16) | (0xFF << 8) | 0xFF;
+						}else{
+							off = iter->stride * j + k * 4;
+							//fprintf(stderr, "4 -> off -> %d\n",off);
+							*(uint32_t*)&iter->map[off] =
+									 (0x00 << 16) | (0x00 << 8) | 0x00;
+						}
+					}
+				}
+			}
+#endif
 		}
 
 		usleep(100000);
